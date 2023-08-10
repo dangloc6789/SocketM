@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.views import View
+from django.core.mail import send_mail
 from .models import MenuItem, Category, OrderModel
 
 
@@ -34,6 +35,13 @@ class Order(View):
         return render(request, 'customer/order.html', context)
 
     def post(self, request, *args, **kwargs):
+        name=request.POST.get('name')
+        email=request.POST.get('email')
+        street=request.POST.get('street')
+        city=request.POST.get('city')
+        district=request.POST.get('district')
+        zip_code=request.POST.get('zip')
+        
         order_items = {
             'items': []
         }
@@ -57,8 +65,28 @@ class Order(View):
             price += item['price']
             item_ids.append(item['id'])
 
-        order = OrderModel.objects.create(price=price)
+        order = OrderModel.objects.create(
+            price=price,
+            name=name,
+            email=email,
+            street=street,
+            city=city,
+            district=district,
+            zip_code=zip_code,
+        )
         order.items.add(*item_ids)
+        
+        body=('Cảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được chế biến và sẽ được gửi đến chỗ bạn nhanh thôi\n'
+            f'Tổng cộng: {price}\n'
+            'Cảm ơn đã đặt hàng')
+        
+        send_mail(
+            'Cảm ơn bạn đã đặt hàng',
+            body,
+            'example@example.com',
+            [email], 
+            fail_silently=False
+        )
 
         context = {
             'items': order_items['items'],
